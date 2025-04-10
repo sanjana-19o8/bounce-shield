@@ -8,7 +8,36 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/cors"
+
+	"bounceshield/api"
+	"bounceshield/models"
 )
+
+type Job = models.Job
+type Result = models.Result
+
+var jobStore = []Job{}
+
+func verifyEmail(email string) (string, string) {
+	if email == "" {
+		return "invalid", "empty email"
+	}
+	return "valid", "verified"
+}
+
+func saveJob(job Job) {
+	jobStore = append(jobStore, job)
+}
+
+func getJobs(userID string) []Job {
+	var userJobs []Job
+	for _, job := range jobStore {
+		if job.UserID == userID {
+			userJobs = append(userJobs, job)
+		}
+	}
+	return userJobs
+}
 
 func main() {
 	mux := http.NewServeMux()
