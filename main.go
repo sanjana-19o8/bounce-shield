@@ -1,55 +1,82 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/jwt"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"os"
-	"backend/db"
+	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/rs/cors"
 )
 
 func main() {
-	app := fiber.New()
-	app.Use(logger.New())
-	db.InitDB()
+	mux := http.NewServeMux()
 
-	app.Post("/register", Register)
-	app.Post("/login", Login)
+	// API endpoints
+	mux.HandleFunc("/api/verify", handleSingleVerify)
+	mux.HandleFunc("/api/batch-verify", handleBatchVerify)
+	mux.HandleFunc("/api/jobs", jobHandler)
 
-	api := app.Group("/api", jwt.New(jwt.Config{
-		SigningKey: jwtSecret,
-	}))
+	// CORS middleware
+	handler := cors.Default().Handler(mux)
 
-	api.Post("/save-job", SaveJob)
-	api.Get("/job-history", GetJobHistory)
-
-	app.Listen(":3000")
+	log.Println("🌐 Server running at http://localhost:8080")
+	http.ListenAndServe(":8080", handler)
 }
 
+// --- HANDLERS ---
 
-func handleCSVUpload(c *fiber.Ctx) error {
-	file, err := c.FormFile("file")
-	if err != nil {
-		return c.Status(400).SendString("❌ File upload failed")
+func handleSingleVerify(w http.ResponseWriter, r *http.Request) {
+	type Req struct {
+		Email string `json:"email"`
+	}
+	var req Req
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	status, reason := verifyEmail(req.Email)
+
+	res := map[string]string{"email": req.Email, "status": status, "reason": reason}
+	json.NewEncoder(w).Encode(res)
+}
+
+func handleBatchVerify(w http.ResponseWriter, r *http.Request) {
+	type Req struct {
+		UserID string   `json:"user_id"`
+		Emails []string `json:"emails"`
+	}
+	var req Req
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	var results []Result
+	for _, email := range req.Emails {
+		status, reason := verifyEmail(email)
+		results = append(results, Result{Email: email, Status: status, Reason: reason})
 	}
 
-	path := "./uploads/" + file.Filename
-	if err := c.SaveFile(file, path); err != nil {
-		return c.Status(500).SendString("❌ File save failed")
+	job := Job{
+		ID:        uuid.New().String(),
+		UserID:    req.UserID,
+		Emails:    req.Emails,
+		Results:   results,
+		Timestamp: time.Now().Unix(),
 	}
 
-	emails, err := readEmailsFromCSV(path)
-	if err != nil {
-		return c.Status(500).SendString("❌ Could not parse CSV")
+	saveJob(job)
+	json.NewEncoder(w).Encode(job)
+}
+
+func jobHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		userID := r.URL.Query().Get("user")
+		json.NewEncoder(w).Encode(getJobs(userID))
+	case http.MethodPost:
+		var job Job
+		_ = json.NewDecoder(r.Body).Decode(&job)
+		saveJob(job)
+		json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-
-	results := concurrentVerify(emails)
-
-	outputFile := "./verified_" + file.Filename
-	if err := writeResultsToCSV(results, outputFile); err != nil {
-		return c.Status(500).SendString("❌ Failed to save results")
-	}
-
-	return c.JSON(results) // send results as JSON
 }

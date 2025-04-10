@@ -1,4 +1,4 @@
-package db
+package main
 
 import (
 	"database/sql"
@@ -9,6 +9,21 @@ import (
 )
 
 var DB *sql.DB
+
+type Job struct {
+	ID        string   `json:"id"`
+	UserID    string   `json:"user_id"`
+	Emails    []string `json:"emails"`
+	Results   []Result `json:"results"`
+	Timestamp int64    `json:"timestamp"`
+}
+
+type Result struct {
+	Email   string `json:"email"`
+	Status  string `json:"status"`
+	Reason  string `json:"reason"`
+}
+
 
 func InitDB() {
 	var err error
