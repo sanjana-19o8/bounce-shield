@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"bounceshield/verifier"
 )
 
 func readEmailsFromCSV(filename string) ([]string, error) {
@@ -55,9 +57,9 @@ func concurrentVerify(emails []string) map[string]string {
 		wg.Add(1)
 		go func(email string) {
 			defer wg.Done()
-			status := verifyEmail(email)
+			verificationResult := verifier.VerifyEmail(email)
 			mu.Lock()
-			results[email] = status
+			results[email] = verificationResult.Status
 			mu.Unlock()
 		}(email)
 	}

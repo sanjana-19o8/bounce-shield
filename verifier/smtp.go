@@ -11,18 +11,26 @@ import (
 // Result holds detailed classification info
 type VerificationResult struct {
 	Email   string `json:"email"`
-	Status  string `json:"status"`  // "valid", "invalid", or "unknown"
-	Reason  string `json:"reason"`  // "invalid syntax", "domain not found", etc.
+	Status  string `json:"status"` // "valid", "invalid", or "unknown"
+	Reason  string `json:"reason"` // "invalid syntax", "domain not found", etc.
 	Details string `json:"details,omitempty"`
 }
 
 var disposableDomains = map[string]bool{
-	"mailinator.com":  true,
-	"10minutemail.com": true,
-	"tempmail.com":    true,
+	"mailinator.com":    true,
+	"10minutemail.com":  true,
+	"tempmail.com":      true,
 	"guerrillamail.com": true,
-	"yopmail.com":     true,
+	"yopmail.com":       true,
 	// Add more from a real list
+}
+
+func getDomain(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
 }
 
 // 1. Validate email syntax
@@ -34,7 +42,7 @@ func isValidEmailSyntax(email string) bool {
 
 // 2. Check disposable domain
 func isDisposable(email string) bool {
-	domain := strings.ToLower(strings.Split(email, "@")[1])
+	domain := strings.ToLower(getDomain(email))
 	return disposableDomains[domain]
 }
 
@@ -49,7 +57,7 @@ func hasMX(domain string) (bool, error) {
 
 // 4-5. SMTP Check
 func smtpVerify(email string) (string, error) {
-	domain := strings.Split(email, "@")[1]
+	domain := getDomain(email)
 	mxRecords, err := net.LookupMX(domain)
 	if err != nil || len(mxRecords) == 0 {
 		return "domain not found", err
@@ -98,13 +106,13 @@ func VerifyEmail(email string) VerificationResult {
 		}
 	}
 
-	domain := strings.Split(email, "@")[1]
+	domain := getDomain(email)
 	hasMx, err := hasMX(domain)
 	if err != nil || !hasMx {
 		return VerificationResult{
-			Email:  email,
-			Status: "invalid",
-			Reason: "domain not found",
+			Email:   email,
+			Status:  "invalid",
+			Reason:  "domain not found",
 			Details: err.Error(),
 		}
 	}
@@ -119,9 +127,9 @@ func VerifyEmail(email string) VerificationResult {
 	}
 
 	return VerificationResult{
-		Email:  email,
-		Status: "invalid",
-		Reason: smtpResult,
+		Email:   email,
+		Status:  "invalid",
+		Reason:  smtpResult,
 		Details: smtpErr.Error(),
 	}
 }

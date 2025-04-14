@@ -5,25 +5,46 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
 
 type Job struct {
-	ID        string   `json:"id"`
-	UserID    string   `json:"user_id"`
-	Emails    []string `json:"emails"`
-	Results   []Result `json:"results"`
-	Timestamp int64    `json:"timestamp"`
+	ID           string   `json:"id"`
+	UserID       string   `json:"user_id"`
+	Emails       []string `json:"emails"`
+	Results      []Result `json:"results"`
+	Timestamp    int64    `json:"timestamp"`
+	EmailToCheck string   `json:"email_to_check"`
+	Owner        string   `json:"owner"`
+	Status       string   `json:"status"`
 }
 
 type Result struct {
-	Email   string `json:"email"`
-	Status  string `json:"status"`
-	Reason  string `json:"reason"`
+	Email  string `json:"email"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
 
+func SaveJob(emailToCheck, owner string) Job {
+	return Job{
+		ID:           uuid.New().String(),
+		EmailToCheck: emailToCheck,
+		Status:       "queued",
+		Owner:        owner,
+		Timestamp:    time.Now().Unix(),
+	}
+}
+
+func UpdateJob(job *Job) {
+    query := `UPDATE jobs SET status = ?, timestamp = ? WHERE id = ?`
+    _, err := DB.Exec(query, job.Status, job.Timestamp, job.ID)
+    if err != nil {
+        log.Printf("Failed to update job %s: %v", job.ID, err)
+    }
+}
 
 func InitDB() {
 	var err error
@@ -39,12 +60,12 @@ func InitDB() {
 	);`
 
 	createJobTable := `CREATE TABLE IF NOT EXISTS jobs (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER,
-		filename TEXT,
-		timestamp DATETIME,
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		email_to_check TEXT,
+		owner TEXT,
 		status TEXT,
-		FOREIGN KEY(user_id) REFERENCES users(id)
+		timestamp INTEGER
 	);`
 
 	_, err = DB.Exec(createUserTable)
@@ -53,7 +74,7 @@ func InitDB() {
 	}
 
 	_, err = DB.Exec(createJobTable)
-	if err != nil {
-		log.Fatal("Failed to create jobs table:", err)
-	}
+    if err != nil {
+        log.Fatal("Failed to create jobs table:", err)
+    }
 }

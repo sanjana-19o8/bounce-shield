@@ -4,24 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"bounceshield/verifier"
+	"bounceshield/models"
 )
 
 type requestPayload struct {
 	Email string `json:"email"`
 }
 
-type Job struct {
-	ID     string `json:"id"`
-	UserID string `json:"user_id"`
-	Title  string `json:"title"`
-	Status string `json:"status"`
-}
+type Job = models.Job
+type Result = models.Result
 
 var jobStore = []Job{}
-
-func saveJob(job Job) {
-	jobStore = append(jobStore, job)
-}
 
 func getJobs(userID string) []Job {
 	var userJobs []Job
@@ -41,7 +34,7 @@ func SaveJobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	saveJob(job)
+	models.SaveJob(job.EmailToCheck, job.Owner)
 	json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
 }
 

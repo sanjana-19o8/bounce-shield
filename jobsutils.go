@@ -1,10 +1,12 @@
 package main
 
 import (
-	"backend/db"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"time"
+
+	"bounceshield/models"
 )
 
 func getUserID(c *fiber.Ctx) int {
@@ -23,7 +25,7 @@ func SaveJob(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).SendString("Invalid payload")
 	}
-	_, err := db.DB.Exec("INSERT INTO jobs(user_id, filename, timestamp, status) VALUES (?, ?, ?, ?)",
+	_, err := models.DB.Exec("INSERT INTO jobs(user_id, filename, timestamp, status) VALUES (?, ?, ?, ?)",
 		userID, body.Filename, time.Now(), body.Status)
 	if err != nil {
 		return c.Status(500).SendString("Failed to save job")
@@ -33,7 +35,7 @@ func SaveJob(c *fiber.Ctx) error {
 
 func GetJobHistory(c *fiber.Ctx) error {
 	userID := getUserID(c)
-	rows, err := db.DB.Query("SELECT filename, timestamp, status FROM jobs WHERE user_id = ? ORDER BY timestamp DESC", userID)
+	rows, err := models.DB.Query("SELECT filename, timestamp, status FROM jobs WHERE user_id = ? ORDER BY timestamp DESC", userID)
 	if err != nil {
 		return c.Status(500).SendString("DB error")
 	}

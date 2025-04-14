@@ -1,111 +1,44 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/cors"
 
 	"bounceshield/api"
+	"bounceshield/auth"
+	"bounceshield/jobs"
 	"bounceshield/models"
 )
 
-type Job = models.Job
-type Result = models.Result
-
-var jobStore = []Job{}
-
-func verifyEmail(email string) (string, string) {
-	if email == "" {
-		return "invalid", "empty email"
-	}
-	return "valid", "verified"
-}
-
-func saveJob(job Job) {
-	jobStore = append(jobStore, job)
-}
-
-func getJobs(userID string) []Job {
-	var userJobs []Job
-	for _, job := range jobStore {
-		if job.UserID == userID {
-			userJobs = append(userJobs, job)
-		}
-	}
-	return userJobs
-}
-
 func main() {
+	log.Println("🚀 Starting server...")
+
+	// Initialize the database
+	models.InitDB()
+
 	mux := http.NewServeMux()
 
+	jobs.StartWorkerPool(5)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Welcome to BounceShield API!"))
+	})
+
 	// API endpoints
-	mux.HandleFunc("/api/verify", handleSingleVerify)
-	mux.HandleFunc("/api/batch-verify", handleBatchVerify)
-	mux.HandleFunc("/api/jobs", jobHandler)
+	mux.HandleFunc("/api/login", api.LoginHandler)
+	mux.HandleFunc("/api/signin", api.RegisterHandler)
+	mux.HandleFunc("/api/verify", api.VerifyHandler)
+	mux.HandleFunc("/api/batch-verify", api.HandleBatchVerify)
+	mux.HandleFunc("/api/jobs", api.JobHandler)
+
+	mux.HandleFunc("/api/queue", auth.AuthMiddleware(api.QueueHandler))
+	mux.HandleFunc("/api/status", auth.AuthMiddleware(api.JobStatusHandler))
 
 	// CORS middleware
 	handler := cors.Default().Handler(mux)
 
 	log.Println("🌐 Server running at http://localhost:8080")
 	http.ListenAndServe(":8080", handler)
-}
-
-// --- HANDLERS ---
-
-func handleSingleVerify(w http.ResponseWriter, r *http.Request) {
-	type Req struct {
-		Email string `json:"email"`
-	}
-	var req Req
-	_ = json.NewDecoder(r.Body).Decode(&req)
-
-	status, reason := verifyEmail(req.Email)
-
-	res := map[string]string{"email": req.Email, "status": status, "reason": reason}
-	json.NewEncoder(w).Encode(res)
-}
-
-func handleBatchVerify(w http.ResponseWriter, r *http.Request) {
-	type Req struct {
-		UserID string   `json:"user_id"`
-		Emails []string `json:"emails"`
-	}
-	var req Req
-	_ = json.NewDecoder(r.Body).Decode(&req)
-
-	var results []Result
-	for _, email := range req.Emails {
-		status, reason := verifyEmail(email)
-		results = append(results, Result{Email: email, Status: status, Reason: reason})
-	}
-
-	job := Job{
-		ID:        uuid.New().String(),
-		UserID:    req.UserID,
-		Emails:    req.Emails,
-		Results:   results,
-		Timestamp: time.Now().Unix(),
-	}
-
-	saveJob(job)
-	json.NewEncoder(w).Encode(job)
-}
-
-func jobHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		userID := r.URL.Query().Get("user")
-		json.NewEncoder(w).Encode(getJobs(userID))
-	case http.MethodPost:
-		var job Job
-		_ = json.NewDecoder(r.Body).Decode(&job)
-		saveJob(job)
-		json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
