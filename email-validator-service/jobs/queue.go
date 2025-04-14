@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"bounceshield/models"
+	"bounceshield/email-validator-service/models"
 	"sync"
 )
 

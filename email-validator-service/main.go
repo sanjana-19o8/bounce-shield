@@ -6,10 +6,10 @@ import (
 
 	"github.com/rs/cors"
 
-	"bounceshield/api"
-	"bounceshield/auth"
-	"bounceshield/jobs"
-	"bounceshield/models"
+	"bounceshield/email-validator-service/api"
+	"bounceshield/email-validator-service/auth"
+	"bounceshield/email-validator-service/jobs"
+	"bounceshield/email-validator-service/models"
 )
 
 func main() {

@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 
-	"bounceshield/models"
+	"bounceshield/email-validator-service/models"
 )
 
 var jwtSecret = []byte("supersecretkey")

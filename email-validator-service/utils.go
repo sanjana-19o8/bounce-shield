@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"bounceshield/verifier"
+	"bounceshield/email-validator-service/verifier"
 )
 
 func readEmailsFromCSV(filename string) ([]string, error) {

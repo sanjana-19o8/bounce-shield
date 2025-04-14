@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 
-	"bounceshield/models"
+	"bounceshield/email-validator-service/models"
 )
 
 func getUserID(c *fiber.Ctx) int {

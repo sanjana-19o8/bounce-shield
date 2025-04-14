@@ -1,10 +1,10 @@
 package api
 
 import (
+	"bounceshield/email-validator-service/models"
+	"bounceshield/email-validator-service/verifier"
 	"encoding/json"
 	"net/http"
-	"bounceshield/verifier"
-	"bounceshield/models"
 )
 
 type requestPayload struct {

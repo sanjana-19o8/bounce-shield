@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"bounceshield/auth"
-	"bounceshield/jobs"
-	"bounceshield/models"
-	"bounceshield/verifier"
+	"bounceshield/email-validator-service/auth"
+	"bounceshield/email-validator-service/jobs"
+	"bounceshield/email-validator-service/models"
+	"bounceshield/email-validator-service/verifier"
 )
 
 type queueRequest struct {
