@@ -7,6 +7,7 @@ const Sidebar = () => {
       <Link to="/" className="mb-4 hover:text-blue-300">🏠 Dashboard</Link>
       <Link to="/verify" className="mb-4 hover:text-blue-300">📤 Batch Verify</Link>
       <Link to="/history" className="mb-4 hover:text-blue-300">🕓 Job History</Link>
+      <Link to="/temp-mail" className="mb-4 hover:text-blue-300">🕓 TempMail</Link>
     </div>
   );
 };

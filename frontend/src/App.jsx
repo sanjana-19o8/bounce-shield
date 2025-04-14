@@ -9,6 +9,7 @@ import JobHistory from "./pages/JobHistory";
 import AuthForm from "./components/AuthForm";
 import PrivateRoute from "./components/PrivateRoute";
 import Welcome from "./components/Welcome";
+import TempEmailDashboard from "./pages/TempEmail";
 
 
 const AppRoutes = ({ token, handleLogout, setToken }) => {
@@ -55,6 +56,13 @@ const AppRoutes = ({ token, handleLogout, setToken }) => {
           <PrivateRoute token={token}>
             <JobHistory />
           </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/temp-email"
+        element={
+            <TempEmailDashboard />
         }
       />
       <Route path="*" element={<Navigate to={token ? "/dashboard" : "/"} />} />
